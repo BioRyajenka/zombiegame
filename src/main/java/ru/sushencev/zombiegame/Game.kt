@@ -1,16 +1,14 @@
 package ru.sushencev.zombiegame
 
+import com.googlecode.lanterna.TerminalPosition
 import com.googlecode.lanterna.input.KeyStroke
 import com.googlecode.lanterna.input.KeyType
 import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.terminal.Terminal
 import ru.sushencev.zombiegame.views.GameLogView
-
-enum class ResourceType { FOOD, MATERIALS }
-
-class Colony(val resources: MutableMap<ResourceType, Float>) {
-}
+import ru.sushencev.zombiegame.views.MapView
+import ru.sushencev.zombiegame.views.SimpleMapGenerator
 
 class Game(var activeWindow: KeyAware, val windows: List<GUI>) : AutoCloseable {
     private val terminal: Terminal = DefaultTerminalFactory().createTerminal().also {
@@ -20,7 +18,7 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>) : AutoCloseable {
 
     private val screen: TerminalScreen = TerminalScreen(terminal)
 
-    private val textGraphics = screen.newTextGraphics()
+    private val textGraphics = screen.newTextGraphics()//.also { it.foregroundColor = MyColor.WHITE }
     private var initialCursorPosition = screen.cursorPosition
 
 //    fun refreshInitialCursorPosition() {
@@ -38,7 +36,8 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>) : AutoCloseable {
             if (input != null) activeWindow.onKeyEvent(input, this)
             if (needTerminate || input?.keyType == KeyType.EOF) break
 
-            windows.forEach { it.draw(textGraphics) }
+            textGraphics.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, terminal.terminalSize,  ' ')
+            windows.forEach { if (it.visible) it.draw(textGraphics) }
 
             screen.refresh()
             Thread.yield()
@@ -58,6 +57,18 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>) : AutoCloseable {
 }
 
 fun main(args: Array<String>) {
-    val gameLogView = GameLogView(emptyList())
-    Game(gameLogView, listOf(gameLogView)).use(Game::loop)
+    val map = SimpleMapGenerator.getInstance().generate(80, 22)
+    val mapView = MapView(map).also { it.hide() }
+    val controlCommands = arrayOf(
+            ControlCommand('m', "mission") {},
+            ControlCommand('p', "manage people") {},
+            ControlCommand('f', "manage facilities") {},
+            ControlCommand('M', "map") {
+                mapView.show()
+                it.activeWindow = mapView
+            }
+    )
+    val gameLogView = GameLogView(*controlCommands)
+
+    Game(gameLogView, listOf(gameLogView, mapView)).use(Game::loop)
 }
