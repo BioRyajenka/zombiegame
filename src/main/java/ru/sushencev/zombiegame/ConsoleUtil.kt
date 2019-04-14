@@ -14,7 +14,6 @@ sealed class MyColor(r: Int, g: Int, b: Int) : TextColor by TextColor.Indexed.fr
     object GRAY : MyColor(125, 125, 125)
     object WHITE : MyColor(255, 255, 255)
     object BRIGHT_BLUE : MyColor(66, 111, 191)
-//    val indexedColor = TextColor.Indexed.fromRGB(r, g, b)!!
 }
 
 fun colorize(s: String, color: TextColor): String {

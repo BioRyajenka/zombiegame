@@ -1,5 +1,9 @@
 package ru.sushencev.zombiegame
 
+import ru.sushencev.zombiegame.views.GameMap
+import ru.sushencev.zombiegame.views.Site
+import kotlin.math.min
+
 
 enum class Trait(val desc: String) {
     // тут херня. смысла нет, т.к. t возвращает строку
@@ -49,9 +53,16 @@ class Person(
 
 enum class ResourceType { FOOD, MATERIALS, AMMO, RADIO }
 
-class Colony(val resources: MutableMap<ResourceType, Double>, val dwellers: MutableList<Person>) {
+class Colony(val resources: MutableMap<ResourceType, Double>, val dwellers: MutableList<Person>, val site: Site) {
     companion object {
-        fun createDefaultColony(): Colony {
+        fun createDefaultColony(map: GameMap): Colony {
+            val resources = mutableMapOf(
+                    ResourceType.RADIO to 4.0,
+                    ResourceType.FOOD to 36.0,
+                    ResourceType.AMMO to 1.0,
+                    ResourceType.MATERIALS to 1.0
+            )
+
             val dwellers = mutableListOf(
                     Person(Gender.MALE, "Джим", Trait.ENVIOUS, null, randInt(20, 80), Relationships()),
                     Person(Gender.MALE, "Карлос", Trait.INDECISIVE, null, randInt(20, 80), Relationships()),
@@ -61,12 +72,14 @@ class Colony(val resources: MutableMap<ResourceType, Double>, val dwellers: Muta
                     Person(Gender.MALE, "Джон", Trait.SLEEPY, null, randInt(20, 80), Relationships())
             )
 
-            return Colony(listOf(
-                    ResourceType.RADIO to 4.0,
-                    ResourceType.FOOD to 36.0,
-                    ResourceType.AMMO to 1.0,
-                    ResourceType.MATERIALS to 1.0
-            ).toMap().toMutableMap(), dwellers)
+            val site = map.field.reversed().map { row ->
+                row.filterNot { it.type.decorative }.let { if (it.isEmpty()) null else it[randInt(it.size)] }
+            }.let { rows: List<Site?> ->
+                rows.drop(min(10, map.field.size)).find { it != null } ?: rows.find { it != null }
+                ?: error("There is no dwellable sites on this map")
+            }
+
+            return Colony(resources, dwellers, site)
         }
     }
 }

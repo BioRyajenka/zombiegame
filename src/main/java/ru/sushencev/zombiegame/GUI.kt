@@ -79,9 +79,9 @@ abstract class Scrollable constructor(private var items: List<ScrollableItem>) :
     }
 
     override fun onKeyEvent(key: KeyStroke, game: Game) {
-        selectedItem = when {
-            key.keyType == KeyType.ArrowUp -> items[max(0, items.indexOf(selectedItem) - 1)]
-            key.keyType == KeyType.ArrowDown -> items[min(items.size - 1, items.indexOf(selectedItem) + 1)]
+        selectedItem = when (key.keyType) {
+            KeyType.ArrowUp -> items[max(0, items.indexOf(selectedItem) - 1)]
+            KeyType.ArrowDown -> items[min(items.size - 1, items.indexOf(selectedItem) + 1)]
             else -> selectedItem
         }
     }

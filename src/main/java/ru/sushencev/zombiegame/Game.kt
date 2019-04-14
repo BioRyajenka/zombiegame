@@ -10,7 +10,7 @@ import ru.sushencev.zombiegame.views.GameLogView
 import ru.sushencev.zombiegame.views.MapView
 import ru.sushencev.zombiegame.views.SimpleMapGenerator
 
-class Game(var activeWindow: KeyAware, val windows: List<GUI>) : AutoCloseable {
+class Game(var activeWindow: KeyAware, val windows: List<GUI>, val colony: Colony) : AutoCloseable {
     private val terminal: Terminal = DefaultTerminalFactory().createTerminal().also {
         it.enterPrivateMode()
         it.setCursorVisible(false)
@@ -57,18 +57,22 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>) : AutoCloseable {
 }
 
 fun main(args: Array<String>) {
-    val map = SimpleMapGenerator.getInstance().generate(80, 22)
+    val map = SimpleMapGenerator.getInstance().generate(80, 70)
     val mapView = MapView(map).also { it.hide() }
+
+    val colony = Colony.createDefaultColony(map)
+
     val controlCommands = arrayOf(
             ControlCommand('m', "mission") {},
             ControlCommand('p', "manage people") {},
             ControlCommand('f', "manage facilities") {},
             ControlCommand('M', "map") {
+                mapView.center = colony.site
                 mapView.show()
                 it.activeWindow = mapView
             }
     )
     val gameLogView = GameLogView(*controlCommands)
 
-    Game(gameLogView, listOf(gameLogView, mapView)).use(Game::loop)
+    Game(gameLogView, listOf(gameLogView, mapView), colony).use(Game::loop)
 }
