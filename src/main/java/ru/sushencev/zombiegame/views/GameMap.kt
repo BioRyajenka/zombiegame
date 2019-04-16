@@ -1,13 +1,13 @@
 package ru.sushencev.zombiegame.views
 
+import com.googlecode.lanterna.Symbols
+import com.googlecode.lanterna.TextColor
 import com.googlecode.lanterna.graphics.TextGraphics
 import com.googlecode.lanterna.input.KeyStroke
 import com.googlecode.lanterna.input.KeyType
 import ru.sushencev.zombiegame.*
 import ru.sushencev.zombiegame.MyColor.*
 import ru.sushencev.zombiegame.views.SiteType.*
-import kotlin.math.max
-import kotlin.math.min
 
 private val returnToGameLogViewCommand = ControlCommand('q', "return") {
     it.windows.find { it is MapView }!!.hide()
@@ -15,7 +15,14 @@ private val returnToGameLogViewCommand = ControlCommand('q', "return") {
 }
 
 
-enum class SiteType(val char: Char, val color: MyColor = WHITE, val decorative: Boolean = false) {
+enum class SiteType(val char: Char, val color: TextColor = WHITE, val decorative: Boolean = false) {
+    HOR_BORDER(Symbols.SINGLE_LINE_HORIZONTAL, TextColor.ANSI.WHITE, decorative = true),
+    VER_BORDER(Symbols.SINGLE_LINE_VERTICAL, TextColor.ANSI.WHITE, decorative = true),
+    TL_BORDER(Symbols.SINGLE_LINE_TOP_LEFT_CORNER, TextColor.ANSI.WHITE, decorative = true),
+    TR_BORDER(Symbols.SINGLE_LINE_TOP_RIGHT_CORNER, TextColor.ANSI.WHITE, decorative = true),
+    BL_BORDER(Symbols.SINGLE_LINE_BOTTOM_LEFT_CORNER, TextColor.ANSI.WHITE, decorative = true),
+    BR_BORDER(Symbols.SINGLE_LINE_BOTTOM_RIGHT_CORNER, TextColor.ANSI.WHITE, decorative = true),
+
     NOTHING(' ', decorative = true), GRASS(',', GREEN, decorative = true), ROAD('?', decorative = true),
     HOUSE('h'), BIG_HOUSE('H'), CHURCH('c'), SCHOOL('S'),
     HOSPITAL('H', RED),
@@ -23,7 +30,6 @@ enum class SiteType(val char: Char, val color: MyColor = WHITE, val decorative: 
     GAS_STATION('G', GRAY), PARK('p', GRAY), BANK('B', GRAY)
 }
 
-// TODO: add MapPoint class with mutable i j
 class Site(val type: SiteType, val i: Int, val j: Int)
 
 abstract class MapGenerator {
@@ -31,9 +37,19 @@ abstract class MapGenerator {
 
     fun generate(width: Int, height: Int): GameMap {
         require(width > 0 && height > 0)
-        return generateSequence { doGenerate(width, height) }.find {
-            it.field.any { row -> row.any { !it.type.decorative } }
+        val map = generateSequence { doGenerate(width, height) }.find {
+            it.any { row -> row.any { !it.type.decorative } }
         }!!
+        val upperBorder = listOf(Site(TL_BORDER, -1, -1)) +
+                (0 until map.width).map { Site(HOR_BORDER, -1, it) } +
+                Site(TR_BORDER, -1, map.width)
+        val bottomBorder = listOf(Site(BL_BORDER, -1, -1)) +
+                (0 until map.width).map { Site(HOR_BORDER, -1, it) } +
+                Site(BR_BORDER, -1, map.width)
+        val newMap = map.mapIndexed { i, row ->
+            listOf(Site(VER_BORDER, i, -1)) + row + Site(VER_BORDER, i, map.width)
+        }
+        return GameMap(listOf(upperBorder) + newMap + listOf(bottomBorder))
     }
 }
 
@@ -82,9 +98,11 @@ class SimpleMapGenerator private constructor(private val decorationProbabilityWe
     }
 }
 
-class GameMap(val field: List<List<Site>>)
+class GameMap(field: List<List<Site>>) : List<List<Site>> by field {
+    val height: Int get() = this.size
+    val width: Int get() = this.first().size
+}
 
-// TODO: add map border
 class MapView(private val map: GameMap) : GUIWithCommands(returnToGameLogViewCommand) {
     lateinit var center: Site
 
@@ -97,14 +115,18 @@ class MapView(private val map: GameMap) : GUIWithCommands(returnToGameLogViewCom
             KeyType.ArrowRight -> 0 to 1
             else -> 0 to 0
         }
-        center = Site(NOTHING, center.i + di, center.j + dj)
+        val (ni, nj) = center.i + di to center.j + dj
+        val siteType = if (ni in 0 until map.height && nj in 0 until map.width) {
+            map[ni][nj].type
+        } else NOTHING
+        center = Site(siteType, ni, nj)
     }
 
     override fun draw(tg: TextGraphics) {
         tg.clearScreen()
         val width = tg.size.columns
         val height = tg.size.rows - 2
-        val rows = map.field.cautiousSubList(
+        val rows = map.cautiousSubList(
                 center.i - height / 2,
                 center.i + height / 2 + height % 2) { emptyList() }
         rows.forEachIndexed { i, row ->

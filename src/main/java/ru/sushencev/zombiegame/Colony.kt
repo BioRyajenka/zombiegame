@@ -72,10 +72,10 @@ class Colony(val resources: MutableMap<ResourceType, Double>, val dwellers: Muta
                     Person(Gender.MALE, "Джон", Trait.SLEEPY, null, randInt(20, 80), Relationships())
             )
 
-            val site = map.field.reversed().map { row ->
+            val site = map.reversed().map { row ->
                 row.filterNot { it.type.decorative }.let { if (it.isEmpty()) null else it[randInt(it.size)] }
             }.let { rows: List<Site?> ->
-                rows.drop(min(10, map.field.size)).find { it != null } ?: rows.find { it != null }
+                rows.drop(min(10, map.size)).find { it != null } ?: rows.find { it != null }
                 ?: error("There is no dwellable sites on this map")
             }
 
