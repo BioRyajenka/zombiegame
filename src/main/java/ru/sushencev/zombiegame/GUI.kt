@@ -17,12 +17,25 @@ interface KeyAware {
 abstract class GUI : KeyAware {
     private var visible: Boolean = true
 
-    abstract fun doDraw(tg: TextGraphics)
+    private var sizeAndPositionTranslation: (TerminalSize) -> TerminalSizeAndPosition = {
+        TerminalSizeAndPosition(0, 0, it.columns, it.rows)
+    }
 
-    open fun draw(tg: TextGraphics) {
+    fun restrict(sizeAndPositionTranslation: (TerminalSize) -> TerminalSizeAndPosition) {
+        this.sizeAndPositionTranslation = sizeAndPositionTranslation
+    }
+
+    protected abstract fun doDraw(tg: TextGraphics)
+
+    fun draw(tg: TextGraphics) {
         if (!visible) return
-        tg.fill(' ')
-        doDraw(tg)
+
+        val (i, j, width, height) = sizeAndPositionTranslation(tg.size)
+
+        tg.newTextGraphics(TerminalPosition(j, i), TerminalSize(width, height)).also {
+            it.fill(' ')
+            doDraw(it)
+        }
     }
 
     fun hide() {
@@ -34,27 +47,6 @@ abstract class GUI : KeyAware {
     }
 }
 
-fun GUI.restricted(iFunction: (TerminalSize) -> Int,
-                   jFunction: (TerminalSize) -> Int,
-                   widthFunction: (TerminalSize) -> Int,
-                   heightFunction: (TerminalSize) -> Int): GUI {
-    return object : GUI() {
-        override fun onKeyEvent(key: KeyStroke, game: Game) = this@restricted.onKeyEvent(key, game)
-
-        override fun doDraw(tg: TextGraphics) {
-            val i = iFunction(tg.size)
-            val j = jFunction(tg.size)
-            val width = widthFunction(tg.size)
-            val height = heightFunction(tg.size)
-
-            val restrictedTG = tg.newTextGraphics(TerminalPosition(j, i), TerminalSize(height, width))
-
-            this@restricted.draw(restrictedTG)
-        }
-
-    }
-}
-
 data class ControlCommand(val key: Char, val name: String, val runnable: (Game) -> Unit)
 
 abstract class GUIWithCommands(private vararg val commands: ControlCommand) : GUI() {
@@ -62,7 +54,7 @@ abstract class GUIWithCommands(private vararg val commands: ControlCommand) : GU
         commands.find { it.key == key.character }?.runnable?.invoke(game)
     }
 
-    override fun draw(tg: TextGraphics) {
+    override fun doDraw(tg: TextGraphics) {
         val width = tg.size.columns
         val height = tg.size.rows
 
@@ -84,7 +76,7 @@ abstract class GUIWithCommands(private vararg val commands: ControlCommand) : GU
     }
 }
 
-class Pane(val content: String) : GUI() {
+abstract class Pane : GUI() {
     override fun doDraw(tg: TextGraphics) {
         // TODO: getWordWrappedText
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -93,24 +85,20 @@ class Pane(val content: String) : GUI() {
     override fun onKeyEvent(key: KeyStroke, game: Game) = throw NotImplementedError()
 }
 
-abstract class ListView<T : Any> constructor() : GUI() {
+open class ListView<T : Any>(private val itemToString: (T) -> String) : GUI() {
     private lateinit var items: List<T>
-    private lateinit var itemToString: (T) -> String
 
     private var selectedItemIndex: Int = 0
+    val selectedItem: T get() = items[selectedItemIndex]
 
-    constructor(items: List<T>, itemToString: (T) -> String) : this() {
-        setItems(items, itemToString)
+    constructor(items: List<T>, itemToString: (T) -> String) : this(itemToString) {
+        setItems(items)
     }
 
-    fun setItems(items: List<T>, itemToString: (T) -> String) {
+    fun setItems(items: List<T>) {
         this.items = items
-        this.itemToString = itemToString
         selectedItemIndex = 0
-        onItemChange(items.first())
     }
-
-    abstract fun onItemChange(item: T)
 
     override fun onKeyEvent(key: KeyStroke, game: Game) {
         selectedItemIndex = when (key.keyType) {
@@ -118,7 +106,6 @@ abstract class ListView<T : Any> constructor() : GUI() {
             KeyType.ArrowDown -> min(items.size - 1, selectedItemIndex + 1)
             else -> return
         }
-        onItemChange(items[selectedItemIndex])
     }
 
     override fun doDraw(tg: TextGraphics) {
@@ -137,25 +124,33 @@ abstract class ListView<T : Any> constructor() : GUI() {
 
 typealias ScrollableItem = Pair<String, Pane>
 
-abstract class Scrollable : GUI() {
-    /*fun setItems(items: List<Pair<String, Pane>>) {
-        require(items.isNotEmpty())
-        require(items.distinct().size == items.size) {
-            "Items should be different due to specific selection process"
-        }
-        this.items = items
-        selectedItem = items.first()
+private const val LISTITEM_WIDTH = 20
+
+class Scrollable constructor() : GUI() {
+    constructor(items: List<ScrollableItem>) : this() {
+        listView.setItems(items)
     }
+
+    private val listView = ListView<ScrollableItem> { it.first }.also {
+        it.restrict {
+            val width = LISTITEM_WIDTH
+            val height = it.rows
+            val i = 0
+            val j = it.columns - width
+            TerminalSizeAndPosition(i, j, width, height)
+        }
+    }
+
+    val setItems = listView::setItems
 
     override fun onKeyEvent(key: KeyStroke, game: Game) {
-        selectedItem = when (key.keyType) {
-            KeyType.ArrowUp -> items[max(0, items.indexOf(selectedItem) - 1)]
-            KeyType.ArrowDown -> items[min(items.size - 1, items.indexOf(selectedItem) + 1)]
-            else -> selectedItem
-        }
+        listView.onKeyEvent(key, game)
     }
 
-    override fun draw(tg: TextGraphics) {
-        selectedItem.second.draw(tg)
-    }*/
+    override fun doDraw(tg: TextGraphics) {
+        tg.newTextGraphics(TerminalPosition.TOP_LEFT_CORNER, TerminalSize(LISTITEM_WIDTH, tg.size.rows)).also {
+            listView.selectedItem.second.draw(it)
+        }
+        listView.draw(tg)
+    }
 }

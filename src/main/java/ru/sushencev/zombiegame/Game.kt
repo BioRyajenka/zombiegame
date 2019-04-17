@@ -70,4 +70,9 @@ fun main(args: Array<String>) {
     val gameLogView = GameLogView(*controlCommands)
 
     Game(gameLogView, listOf(gameLogView, mapView), colony).use(Game::loop)
+//    val scrollable = Scrollable(items = listOf(
+//            "abc" to Pane("abc"),
+//            "def" to Pane("def")
+//    ))
+//    Game(scrollable, listOf(scrollable), colony).use(Game::loop)
 }

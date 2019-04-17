@@ -28,3 +28,5 @@ fun colorize(s: String, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = B
 fun colorize(c: Char, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = BLACK): String {
     return colorize(c.toString(), color, bgColor)
 }
+
+data class TerminalSizeAndPosition(val i: Int, val j: Int, val width: Int, val height: Int)

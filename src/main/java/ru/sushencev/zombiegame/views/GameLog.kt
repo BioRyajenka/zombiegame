@@ -19,6 +19,7 @@ class GameLogView(vararg commands: ControlCommand) : GUIWithCommands(*commands) 
     }
 
     override fun doDraw(tg: TextGraphics) {
+        super.doDraw(tg)
         tg.drawLine(0, 1, tg.size.columns - 1, 1, Symbols.DOUBLE_LINE_HORIZONTAL)
         tg.putString(10, 0, "food: 15")
 

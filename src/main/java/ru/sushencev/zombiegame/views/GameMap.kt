@@ -122,6 +122,7 @@ class MapView(private val map: GameMap) : GUIWithCommands(returnToGameLogViewCom
     }
 
     override fun doDraw(tg: TextGraphics) {
+        super.doDraw(tg)
         val width = tg.size.columns
         val height = tg.size.rows - 2
         val rows = map.cautiousSubList(
