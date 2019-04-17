@@ -16,28 +16,23 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>, val colony: Colon
         it.setCursorVisible(false)
     }
 
-    private val screen: TerminalScreen = TerminalScreen(terminal)
-
-    private val textGraphics = screen.newTextGraphics()//.also { it.foregroundColor = MyColor.WHITE }
-    private var initialCursorPosition = screen.cursorPosition
-
-//    fun refreshInitialCursorPosition() {
-//        initialCursorPosition = screen.cursorPosition
-//    }
+    private val screen: TerminalScreen = TerminalScreen(terminal).also {
+        it.cursorPosition = null
+    }
 
     fun loop() {
         screen.startScreen()
 
         while (true) {
-            screen.cursorPosition = initialCursorPosition
             screen.doResizeIfNecessary()
+            val textGraphics = screen.newTextGraphics()
 
             val input: KeyStroke? = screen.pollInput()
             if (input != null) activeWindow.onKeyEvent(input, this)
             if (needTerminate || input?.keyType == KeyType.EOF) break
 
             textGraphics.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, terminal.terminalSize,  ' ')
-            windows.forEach { if (it.visible) it.draw(textGraphics) }
+            windows.forEach { it.draw(textGraphics) }
 
             screen.refresh()
             Thread.yield()

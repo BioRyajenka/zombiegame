@@ -1,10 +1,12 @@
 package ru.sushencev.zombiegame
 
 import com.googlecode.lanterna.Symbols
+import com.googlecode.lanterna.TerminalPosition
+import com.googlecode.lanterna.TerminalSize
 import com.googlecode.lanterna.graphics.TextGraphics
 import com.googlecode.lanterna.input.KeyStroke
 import com.googlecode.lanterna.input.KeyType
-import ru.sushencev.zombiegame.MyColor.BLUE
+import ru.sushencev.zombiegame.MyColor.*
 import kotlin.math.max
 import kotlin.math.min
 
@@ -13,9 +15,15 @@ interface KeyAware {
 }
 
 abstract class GUI : KeyAware {
-    var visible: Boolean = true
+    private var visible: Boolean = true
 
-    abstract fun draw(tg: TextGraphics)
+    abstract fun doDraw(tg: TextGraphics)
+
+    open fun draw(tg: TextGraphics) {
+        if (!visible) return
+        tg.fill(' ')
+        doDraw(tg)
+    }
 
     fun hide() {
         visible = false
@@ -23,6 +31,27 @@ abstract class GUI : KeyAware {
 
     fun show() {
         visible = true
+    }
+}
+
+fun GUI.restricted(iFunction: (TerminalSize) -> Int,
+                   jFunction: (TerminalSize) -> Int,
+                   widthFunction: (TerminalSize) -> Int,
+                   heightFunction: (TerminalSize) -> Int): GUI {
+    return object : GUI() {
+        override fun onKeyEvent(key: KeyStroke, game: Game) = this@restricted.onKeyEvent(key, game)
+
+        override fun doDraw(tg: TextGraphics) {
+            val i = iFunction(tg.size)
+            val j = jFunction(tg.size)
+            val width = widthFunction(tg.size)
+            val height = heightFunction(tg.size)
+
+            val restrictedTG = tg.newTextGraphics(TerminalPosition(j, i), TerminalSize(height, width))
+
+            this@restricted.draw(restrictedTG)
+        }
+
     }
 }
 
@@ -56,25 +85,65 @@ abstract class GUIWithCommands(private vararg val commands: ControlCommand) : GU
 }
 
 class Pane(val content: String) : GUI() {
-    override fun draw(tg: TextGraphics) {
+    override fun doDraw(tg: TextGraphics) {
+        // TODO: getWordWrappedText
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onKeyEvent(key: KeyStroke, game: Game) = throw NotImplementedError()
 }
 
+abstract class ListView<T : Any> constructor() : GUI() {
+    private lateinit var items: List<T>
+    private lateinit var itemToString: (T) -> String
+
+    private var selectedItemIndex: Int = 0
+
+    constructor(items: List<T>, itemToString: (T) -> String) : this() {
+        setItems(items, itemToString)
+    }
+
+    fun setItems(items: List<T>, itemToString: (T) -> String) {
+        this.items = items
+        this.itemToString = itemToString
+        selectedItemIndex = 0
+        onItemChange(items.first())
+    }
+
+    abstract fun onItemChange(item: T)
+
+    override fun onKeyEvent(key: KeyStroke, game: Game) {
+        selectedItemIndex = when (key.keyType) {
+            KeyType.ArrowUp -> max(0, selectedItemIndex - 1)
+            KeyType.ArrowDown -> min(items.size - 1, selectedItemIndex + 1)
+            else -> return
+        }
+        onItemChange(items[selectedItemIndex])
+    }
+
+    override fun doDraw(tg: TextGraphics) {
+        items.forEachIndexed { i, item ->
+            val s = itemToString(item).padEnd(tg.size.columns, ' ')
+            val (fgColor, bgColor) = if (i == selectedItemIndex) {
+                BLACK to WHITE
+            } else {
+                WHITE to BLACK
+            }
+            tg.putCSIStyledString(0, i, colorize(s, fgColor, bgColor))
+        }
+    }
+
+}
+
 typealias ScrollableItem = Pair<String, Pane>
 
-abstract class Scrollable constructor(private var items: List<ScrollableItem>) : GUI() {
-    constructor() : this(emptyList())
-
-    private lateinit var selectedItem: ScrollableItem
-
-    fun setItems(items: List<Pair<String, Pane>>) {
+abstract class Scrollable : GUI() {
+    /*fun setItems(items: List<Pair<String, Pane>>) {
         require(items.isNotEmpty())
         require(items.distinct().size == items.size) {
             "Items should be different due to specific selection process"
         }
+        this.items = items
         selectedItem = items.first()
     }
 
@@ -88,5 +157,5 @@ abstract class Scrollable constructor(private var items: List<ScrollableItem>) :
 
     override fun draw(tg: TextGraphics) {
         selectedItem.second.draw(tg)
-    }
+    }*/
 }

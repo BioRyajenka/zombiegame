@@ -14,7 +14,6 @@ private val returnToGameLogViewCommand = ControlCommand('q', "return") {
     it.activeWindow = it.windows.find { it is GameLogView }!!
 }
 
-
 enum class SiteType(val char: Char, val color: TextColor = WHITE, val decorative: Boolean = false) {
     HOR_BORDER(Symbols.SINGLE_LINE_HORIZONTAL, TextColor.ANSI.WHITE, decorative = true),
     VER_BORDER(Symbols.SINGLE_LINE_VERTICAL, TextColor.ANSI.WHITE, decorative = true),
@@ -122,8 +121,7 @@ class MapView(private val map: GameMap) : GUIWithCommands(returnToGameLogViewCom
         center = Site(siteType, ni, nj)
     }
 
-    override fun draw(tg: TextGraphics) {
-        tg.clearScreen()
+    override fun doDraw(tg: TextGraphics) {
         val width = tg.size.columns
         val height = tg.size.rows - 2
         val rows = map.cautiousSubList(
@@ -136,6 +134,5 @@ class MapView(private val map: GameMap) : GUIWithCommands(returnToGameLogViewCom
             val rowString = columns.joinToString("") { colorize(it.type.char, it.type.color) }
             tg.putCSIStyledString(0, i, rowString)
         }
-        super.draw(tg)
     }
 }
