@@ -49,7 +49,17 @@ abstract class GUI : KeyAware {
 
 data class ControlCommand(val key: Char, val name: String, val runnable: (Game) -> Unit)
 
-abstract class GUIWithCommands(private vararg val commands: ControlCommand) : GUI() {
+abstract class GUIWithCommands constructor() : GUI() {
+    private lateinit var commands: List<ControlCommand>
+
+    protected fun setCommands(vararg commands: ControlCommand) {
+        this.commands = commands.toList()
+    }
+
+    constructor(vararg commands: ControlCommand) : this() {
+        setCommands(*commands)
+    }
+
     override fun onKeyEvent(key: KeyStroke, game: Game) {
         commands.find { it.key == key.character }?.runnable?.invoke(game)
     }
@@ -77,12 +87,11 @@ abstract class GUIWithCommands(private vararg val commands: ControlCommand) : GU
 }
 
 abstract class Pane : GUI() {
-    override fun doDraw(tg: TextGraphics) {
-        // TODO: getWordWrappedText
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
     override fun onKeyEvent(key: KeyStroke, game: Game) = throw NotImplementedError()
+
+    override fun doDraw(tg: TextGraphics) {
+        tg.drawBorder(TerminalPosition.TOP_LEFT_CORNER, tg.size)
+    }
 }
 
 open class ListView<T : Any>(private val itemToString: (T) -> String) : GUI() {
@@ -126,7 +135,7 @@ typealias ScrollableItem = Pair<String, Pane>
 
 private const val LISTITEM_WIDTH = 20
 
-class Scrollable constructor() : GUI() {
+open class Scrollable constructor() : GUI() {
     constructor(items: List<ScrollableItem>) : this() {
         listView.setItems(items)
     }
@@ -135,7 +144,7 @@ class Scrollable constructor() : GUI() {
         it.restrict {
             val width = LISTITEM_WIDTH
             val height = it.rows
-            val i = 0
+            val i = 1
             val j = it.columns - width
             TerminalSizeAndPosition(i, j, width, height)
         }
@@ -148,7 +157,8 @@ class Scrollable constructor() : GUI() {
     }
 
     override fun doDraw(tg: TextGraphics) {
-        tg.newTextGraphics(TerminalPosition.TOP_LEFT_CORNER, TerminalSize(LISTITEM_WIDTH, tg.size.rows)).also {
+        val (width, height) = tg.size.columns to tg.size.rows
+        tg.newTextGraphics(TerminalPosition.TOP_LEFT_CORNER, TerminalSize(width - LISTITEM_WIDTH, height)).also {
             listView.selectedItem.second.draw(it)
         }
         listView.draw(tg)

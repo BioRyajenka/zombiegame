@@ -20,36 +20,41 @@ enum class Past {
     POLICEMAN, DENTIST
 }
 
+// TODO: ProfessionType, Повар-новичок etc.
 enum class Profession(val desc: String) {
     SENTRY("часовой"),
     COOK("повар")
 }
 
-enum class Mood(val desc: String) {
-    EXCITED("Воодушевлен"),
-    IN_DESPERATION("В отчаянии"),
-    DEPRESSED("В депрессии"),
-    ALL_RIGHT("В порядке")
+enum class Mood(val desc: String, val lowerBound: Int) {
+    EXCITED("воодушевленное", 90),
+    ALL_RIGHT("нормальное", 60),
+    DEPRESSED("в депрессии", 40),
+    IN_DESPERATION("в отчаянии", 20)
 }
 
 class Relationships {
-    fun getDescription(): String? {
+    fun getDescription(): String {
         // "Встречается с <...>"
-        return null
+        return ""
     }
 }
 
-enum class Gender { MALE, FEMALE }
+enum class Gender(val desc: String) { MALE("мужской"), FEMALE("женский") }
 
+// TODO: nickname, like "Джим [Булава] Мёрдок"
 class Person(
         val gender: Gender,
         val name: String,
+        val surname: String,
         val trait: Trait,
         val past: Past?,
 
         var moodValue: Int,
         val relationShips: Relationships,
-        var profession: Profession? = null)
+        var profession: Profession? = null) {
+    val mood: Mood get() = Mood.values().sortedBy { it.lowerBound }.last { it.lowerBound < moodValue }
+}
 
 enum class ResourceType { FOOD, MATERIALS, AMMO, RADIO }
 
@@ -64,12 +69,12 @@ class Colony(val resources: MutableMap<ResourceType, Double>, val dwellers: Muta
             )
 
             val dwellers = mutableListOf(
-                    Person(Gender.MALE, "Джим", Trait.ENVIOUS, null, randInt(20, 80), Relationships()),
-                    Person(Gender.MALE, "Карлос", Trait.INDECISIVE, null, randInt(20, 80), Relationships()),
-                    Person(Gender.MALE, "Майк", Trait.CAUTIOUS, null, randInt(20, 80), Relationships()),
-                    Person(Gender.FEMALE, "Клер", Trait.HYPOCHONDRIAC, null, randInt(20, 80), Relationships()),
-                    Person(Gender.FEMALE, "Стефани", Trait.UNBALANCED, null, randInt(20, 80), Relationships()),
-                    Person(Gender.MALE, "Джон", Trait.SLEEPY, null, randInt(20, 80), Relationships())
+                    Person(Gender.MALE, "Джим", "Волтон", Trait.ENVIOUS, null, randInt(20, 80), Relationships()),
+                    Person(Gender.MALE, "Карлос", "Гардэл", Trait.INDECISIVE, null, randInt(20, 80), Relationships()),
+                    Person(Gender.MALE, "Майк", "Шинода", Trait.CAUTIOUS, null, randInt(20, 80), Relationships()),
+                    Person(Gender.FEMALE, "Клер", "Флауэрс", Trait.HYPOCHONDRIAC, null, randInt(20, 80), Relationships(), Profession.COOK),
+                    Person(Gender.FEMALE, "Стефани", "Питерсон", Trait.UNBALANCED, null, randInt(20, 80), Relationships()),
+                    Person(Gender.MALE, "Джон", "Лобб", Trait.SLEEPY, null, randInt(20, 80), Relationships())
             )
 
             val site = map.reversed().map { row ->

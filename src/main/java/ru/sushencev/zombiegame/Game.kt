@@ -6,9 +6,7 @@ import com.googlecode.lanterna.input.KeyType
 import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.terminal.Terminal
-import ru.sushencev.zombiegame.views.GameLogView
-import ru.sushencev.zombiegame.views.MapView
-import ru.sushencev.zombiegame.views.SimpleMapGenerator
+import ru.sushencev.zombiegame.views.*
 
 class Game(var activeWindow: KeyAware, val windows: List<GUI>, val colony: Colony) : AutoCloseable {
     private val terminal: Terminal = DefaultTerminalFactory().createTerminal().also {
@@ -52,14 +50,20 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>, val colony: Colon
 }
 
 fun main(args: Array<String>) {
+    // 80x24 is default
     val map = SimpleMapGenerator.getInstance().generate(80, 70)
-    val mapView = MapView(map).also { it.hide() }
+    val mapView = MapView(map).also(GUI::hide)
 
     val colony = Colony.createDefaultColony(map)
+    val managePeopleView = ManagePeopleView().also(GUI::hide)
 
     val controlCommands = arrayOf(
             ControlCommand('m', "mission") {},
-            ControlCommand('p', "manage people") {},
+            ControlCommand('p', "manage people") {
+                managePeopleView.setPeople(colony.dwellers)
+                managePeopleView.show()
+                it.activeWindow = managePeopleView
+            },
             ControlCommand('f', "manage facilities") {},
             ControlCommand('M', "map") {
                 mapView.center = colony.site
@@ -69,7 +73,11 @@ fun main(args: Array<String>) {
     )
     val gameLogView = GameLogView(*controlCommands)
 
-    Game(gameLogView, listOf(gameLogView, mapView), colony).use(Game::loop)
+
+    Game(gameLogView, listOf(gameLogView, mapView, managePeopleView), colony).use(Game::loop)
+//    val pv = PersonView()
+//    Game(pv, listOf(pv), colony).use(Game::loop)
+
 //    val scrollable = Scrollable(items = listOf(
 //            "abc" to Pane("abc"),
 //            "def" to Pane("def")

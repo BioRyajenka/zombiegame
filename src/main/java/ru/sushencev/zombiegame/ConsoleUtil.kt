@@ -1,6 +1,7 @@
 package ru.sushencev.zombiegame
 
-import com.googlecode.lanterna.TextColor
+import com.googlecode.lanterna.*
+import com.googlecode.lanterna.graphics.TextGraphics
 import ru.sushencev.zombiegame.MyColor.*
 
 const val ESC = 0x1B.toChar()
@@ -19,10 +20,12 @@ sealed class MyColor(r: Int, g: Int, b: Int) : TextColor by TextColor.Indexed.fr
     object DEFAULT_COLOR : MyColor(170, 170, 170)
 }
 
-fun colorize(s: String, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = BLACK): String {
+fun colorize(s: String, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = BLACK, bold: Boolean = false): String {
+    require(s.none(TerminalTextUtils::isControlCharacter))
     val fgColorSequence = String(color.foregroundSGRSequence)
     val bgColorSequence = String(bgColor.backgroundSGRSequence)
-    return "$ESC[$fgColorSequence;${bgColorSequence}m$s$ESC[39m"
+    val stylesSequence = if (bold) "1" else ""
+    return "$ESC[$fgColorSequence;$bgColorSequence;${stylesSequence}m$s$ESC[39m"
 }
 
 fun colorize(c: Char, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = BLACK): String {
@@ -30,3 +33,23 @@ fun colorize(c: Char, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = BLA
 }
 
 data class TerminalSizeAndPosition(val i: Int, val j: Int, val width: Int, val height: Int)
+
+fun TextGraphics.drawBorder(topLeft: TerminalPosition, size: TerminalSize) {
+    val horChar = Symbols.SINGLE_LINE_HORIZONTAL
+    val verChar = Symbols.SINGLE_LINE_VERTICAL
+    val tlChar = Symbols.SINGLE_LINE_TOP_LEFT_CORNER
+    val trChar = Symbols.SINGLE_LINE_TOP_RIGHT_CORNER
+    val blChar = Symbols.SINGLE_LINE_BOTTOM_LEFT_CORNER
+    val brChar = Symbols.SINGLE_LINE_BOTTOM_RIGHT_CORNER
+
+    drawLine(topLeft.withRelativeColumn(1), topLeft.withRelativeColumn(size.columns - 2), horChar)
+    drawLine(topLeft.withRelative(1, size.rows - 1),
+            topLeft.withRelative(size.columns - 2, size.rows - 1), horChar)
+    drawLine(topLeft.withRelativeRow(1), topLeft.withRelativeRow(size.rows - 2), verChar)
+    drawLine(topLeft.withRelative(size.columns - 1, 1),
+            topLeft.withRelative(size.columns - 1, size.rows - 2), verChar)
+    setCharacter(topLeft, tlChar)
+    setCharacter(topLeft.withRelativeRow(size.rows - 1), blChar)
+    setCharacter(topLeft.withRelativeColumn(size.columns - 1), trChar)
+    setCharacter(topLeft.withRelative(size.columns - 1, size.rows - 1), brChar)
+}

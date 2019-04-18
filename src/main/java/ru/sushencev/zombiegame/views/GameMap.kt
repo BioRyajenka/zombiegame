@@ -9,11 +9,6 @@ import ru.sushencev.zombiegame.*
 import ru.sushencev.zombiegame.MyColor.*
 import ru.sushencev.zombiegame.views.SiteType.*
 
-private val returnToGameLogViewCommand = ControlCommand('q', "return") {
-    it.windows.find { it is MapView }!!.hide()
-    it.activeWindow = it.windows.find { it is GameLogView }!!
-}
-
 enum class SiteType(val char: Char, val color: TextColor = WHITE, val decorative: Boolean = false) {
     HOR_BORDER(Symbols.SINGLE_LINE_HORIZONTAL, TextColor.ANSI.WHITE, decorative = true),
     VER_BORDER(Symbols.SINGLE_LINE_VERTICAL, TextColor.ANSI.WHITE, decorative = true),
@@ -102,7 +97,11 @@ class GameMap(field: List<List<Site>>) : List<List<Site>> by field {
     val width: Int get() = this.first().size
 }
 
-class MapView(private val map: GameMap) : GUIWithCommands(returnToGameLogViewCommand) {
+class MapView(private val map: GameMap) : GUIWithCommands() {
+    init {
+        setCommands(returnToGameLogViewCommand(this))
+    }
+
     lateinit var center: Site
 
     override fun onKeyEvent(key: KeyStroke, game: Game) {

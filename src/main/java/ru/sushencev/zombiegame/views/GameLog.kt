@@ -4,6 +4,7 @@ import com.googlecode.lanterna.Symbols
 import com.googlecode.lanterna.graphics.TextGraphics
 import com.googlecode.lanterna.input.KeyStroke
 import ru.sushencev.zombiegame.ControlCommand
+import ru.sushencev.zombiegame.GUI
 import ru.sushencev.zombiegame.GUIWithCommands
 import ru.sushencev.zombiegame.Game
 
@@ -25,4 +26,9 @@ class GameLogView(vararg commands: ControlCommand) : GUIWithCommands(*commands) 
 
         // TODO: ScreenBuffer.scrollLines
     }
+}
+
+fun returnToGameLogViewCommand(fromGUI: GUI) = ControlCommand('q', "return") {
+    fromGUI.hide()
+    it.activeWindow = it.windows.find { it is GameLogView }!!
 }
