@@ -41,15 +41,17 @@ val closeActiveWindowCommand = ControlCommand('q', "return") {
     it.closeActiveWindow()
 }
 
-abstract class GUIWithCommands constructor() : GUI() {
-    private lateinit var commands: List<ControlCommand>
+interface CommandsControllable {
+    val commands: List<ControlCommand>
+}
 
-    protected fun setCommands(vararg commands: ControlCommand) {
-        this.commands = commands.toList()
-    }
+class CommandsView constructor(vararg commands: ControlCommand) : GUI(), CommandsControllable {
+    override var commands: List<ControlCommand> = commands.toList()
 
-    constructor(vararg commands: ControlCommand) : this() {
-        setCommands(*commands)
+    init {
+        restrict {
+            TerminalSizeAndPosition(it.rows - 2, 0, it.columns, 2)
+        }
     }
 
     override fun onKeyEvent(key: KeyStroke, game: Game) {
@@ -57,21 +59,17 @@ abstract class GUIWithCommands constructor() : GUI() {
     }
 
     override fun doDraw(tg: TextGraphics) {
-        val width = tg.size.columns
-        val height = tg.size.rows
-
-        tg.drawLine(0, height - 2, width - 1, height - 2, Symbols.DOUBLE_LINE_HORIZONTAL)
-        tg.drawLine(0, height - 1, width - 1, height - 1, ' ')
+        tg.drawLine(0, 0, tg.size.columns - 1, 0, Symbols.DOUBLE_LINE_HORIZONTAL)
         val totalCommandsLength = commands.sumBy { it.name.length }
         var curPos = 0
         commands.forEach {
-            val commandWidth = it.name.length / totalCommandsLength * (width - commands.size + 1)
+            val commandWidth = it.name.length / totalCommandsLength * (tg.size.columns - commands.size + 1)
 //            val str = it.name.substring(0, max(min(it.name.length, commandWidth), it.name.length - 4))
             val str = it.name
-            tg.putCSIStyledString(curPos, height - 1, " ${colorize(it.key, BLUE)} $str ")
+            tg.putCSIStyledString(curPos, 1, " ${colorize(it.key, BLUE)} $str ")
             curPos += str.length + 4
             if (it !== commands.last()) {
-                tg.putString(curPos, height - 1, Symbols.BOLD_SINGLE_LINE_VERTICAL.toString())
+                tg.putString(curPos, 1, Symbols.BOLD_SINGLE_LINE_VERTICAL.toString())
                 curPos++
             }
         }

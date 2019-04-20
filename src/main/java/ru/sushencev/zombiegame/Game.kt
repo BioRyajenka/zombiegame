@@ -6,10 +6,13 @@ import com.googlecode.lanterna.input.KeyType
 import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.terminal.Terminal
-import ru.sushencev.zombiegame.views.*
+import ru.sushencev.zombiegame.views.GameLogView
+import ru.sushencev.zombiegame.views.ManagePeopleView
+import ru.sushencev.zombiegame.views.MapView
+import ru.sushencev.zombiegame.views.SimpleMapGenerator
 import java.util.*
 
-class Game(baseWindow: GUI, val colony: Colony) : AutoCloseable {
+class Game(private val commandsView: CommandsView, val colony: Colony) : AutoCloseable {
     private val terminal: Terminal = DefaultTerminalFactory().createTerminal().also {
         it.enterPrivateMode()
         it.setCursorVisible(false)
@@ -19,14 +22,19 @@ class Game(baseWindow: GUI, val colony: Colony) : AutoCloseable {
         it.cursorPosition = null
     }
 
-    private val windows = LinkedList<GUI>().also { it.add(baseWindow) }
+    private val windowsStack = LinkedList<GUI>()
+    private val commandsStack = LinkedList<List<ControlCommand>>()
 
     fun openActiveWindow(window: GUI) {
-        windows.add(window)
+        windowsStack.add(window)
+        if (window is CommandsControllable) commandsStack.add(window.commands)
+        commandsView.commands = commandsStack.last
     }
 
     fun closeActiveWindow() {
-        windows.removeLast()
+        val closedWindow = windowsStack.removeLast()
+        if (closedWindow is CommandsControllable) commandsStack.removeLast()
+        commandsView.commands = commandsStack.last
     }
 
     fun loop() {
@@ -34,14 +42,20 @@ class Game(baseWindow: GUI, val colony: Colony) : AutoCloseable {
 
         while (true) {
             screen.doResizeIfNecessary()
-            val textGraphics = screen.newTextGraphics()
+            val tg = screen.newTextGraphics()
 
             val input: KeyStroke? = screen.pollInput()
-            if (input != null) windows.last().onKeyEvent(input, this)
+            if (input != null) {
+                windowsStack.last().onKeyEvent(input, this)
+                commandsView.onKeyEvent(input, this)
+            }
             if (needTerminate || input?.keyType == KeyType.EOF) break
 
-            textGraphics.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, terminal.terminalSize, ' ')
-            windows.forEach { it.draw(textGraphics) }
+            tg.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, terminal.terminalSize, ' ')
+            commandsView.draw(tg)
+            tg.newTextGraphics(TerminalPosition.TOP_LEFT_CORNER, tg.size.withRelativeRows(-2)).also {
+                windowsStack.forEach { window -> window.draw(it) }
+            }
 
             screen.refresh()
             Thread.yield()
@@ -68,6 +82,8 @@ fun main(args: Array<String>) {
     val colony = Colony.createDefaultColony(map)
     val managePeopleView = ManagePeopleView()
 
+    val commandsView = CommandsView()
+
     val gameLogView = GameLogView(
             ControlCommand('m', "mission") {},
             ControlCommand('p', "manage people") {
@@ -81,5 +97,5 @@ fun main(args: Array<String>) {
             }
     )
 
-    Game(gameLogView, colony).use(Game::loop)
+    Game(commandsView, colony).also { it.openActiveWindow(gameLogView) }.use(Game::loop)
 }

@@ -25,7 +25,8 @@ class PersonView(private val person: Person) : Pane() {
 private const val MP_VIEW_HORIZONTAL_MARGIN = 5
 private const val MP_VIEW_VERTICAL_MARGIN = 2
 
-class ManagePeopleView : GUIWithCommands() {
+class ManagePeopleView : GUI(), CommandsControllable {
+    override val commands: List<ControlCommand> = listOf(closeActiveWindowCommand)
     private val scrollable = Scrollable()
 
     init {
@@ -33,7 +34,6 @@ class ManagePeopleView : GUIWithCommands() {
             TerminalSizeAndPosition(MP_VIEW_VERTICAL_MARGIN, MP_VIEW_HORIZONTAL_MARGIN,
                     it.columns - 2 * MP_VIEW_HORIZONTAL_MARGIN, it.rows - 2 * MP_VIEW_VERTICAL_MARGIN)
         }
-        setCommands(closeActiveWindowCommand)
     }
 
     fun setPeople(people: List<Person>) {
@@ -41,12 +41,10 @@ class ManagePeopleView : GUIWithCommands() {
     }
 
     override fun onKeyEvent(key: KeyStroke, game: Game) {
-        super.onKeyEvent(key, game)
         scrollable.onKeyEvent(key, game)
     }
 
     override fun doDraw(tg: TextGraphics) {
-        super.doDraw(tg)
         scrollable.draw(tg)
     }
 }

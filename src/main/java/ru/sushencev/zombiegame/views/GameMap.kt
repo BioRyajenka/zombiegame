@@ -97,15 +97,12 @@ class GameMap(field: List<List<Site>>) : List<List<Site>> by field {
     val width: Int get() = this.first().size
 }
 
-class MapView(private val map: GameMap) : GUIWithCommands() {
-    init {
-        setCommands(closeActiveWindowCommand)
-    }
+class MapView(private val map: GameMap) : GUI(), CommandsControllable {
+    override val commands: List<ControlCommand> = listOf(closeActiveWindowCommand)
 
     lateinit var center: Site
 
     override fun onKeyEvent(key: KeyStroke, game: Game) {
-        super.onKeyEvent(key, game)
         val (di, dj) = when (key.keyType) {
             KeyType.ArrowUp -> -1 to 0
             KeyType.ArrowDown -> 1 to 0
@@ -121,9 +118,8 @@ class MapView(private val map: GameMap) : GUIWithCommands() {
     }
 
     override fun doDraw(tg: TextGraphics) {
-        super.doDraw(tg)
         val width = tg.size.columns
-        val height = tg.size.rows - 2
+        val height = tg.size.rows
         val rows = map.cautiousSubList(
                 center.i - height / 2,
                 center.i + height / 2 + height % 2) { emptyList() }

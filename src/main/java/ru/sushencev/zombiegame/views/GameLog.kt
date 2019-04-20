@@ -3,14 +3,12 @@ package ru.sushencev.zombiegame.views
 import com.googlecode.lanterna.Symbols
 import com.googlecode.lanterna.graphics.TextGraphics
 import com.googlecode.lanterna.input.KeyStroke
-import ru.sushencev.zombiegame.ControlCommand
-import ru.sushencev.zombiegame.GUI
-import ru.sushencev.zombiegame.GUIWithCommands
-import ru.sushencev.zombiegame.Game
+import ru.sushencev.zombiegame.*
 
-class GameLogView(vararg commands: ControlCommand) : GUIWithCommands(*commands) {
+class GameLogView(vararg commands: ControlCommand) : GUI(), CommandsControllable {
+    override val commands: List<ControlCommand> = commands.toList()
+
     override fun onKeyEvent(key: KeyStroke, game: Game) {
-        super.onKeyEvent(key, game)
         when {
             key.character == 'q' -> {
                 game.terminate()
@@ -20,7 +18,6 @@ class GameLogView(vararg commands: ControlCommand) : GUIWithCommands(*commands) 
     }
 
     override fun doDraw(tg: TextGraphics) {
-        super.doDraw(tg)
         tg.drawLine(0, 1, tg.size.columns - 1, 1, Symbols.DOUBLE_LINE_HORIZONTAL)
         tg.putString(10, 0, "food: 15")
 
