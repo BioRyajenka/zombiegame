@@ -30,7 +30,7 @@ class ManagePeopleView : GUI(), CommandsControllable {
     private val scrollable = Scrollable()
 
     init {
-        scrollable.restrict {
+        restrict {
             TerminalSizeAndPosition(MP_VIEW_VERTICAL_MARGIN, MP_VIEW_HORIZONTAL_MARGIN,
                     it.columns - 2 * MP_VIEW_HORIZONTAL_MARGIN, it.rows - 2 * MP_VIEW_VERTICAL_MARGIN)
         }

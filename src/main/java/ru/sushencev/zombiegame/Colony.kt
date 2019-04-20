@@ -28,8 +28,9 @@ enum class Profession(val desc: String) {
 }
 
 enum class Mood(val desc: String, val lowerBound: Int) {
-    EXCITED("воодушевленное", 90),
-    ALL_RIGHT("нормальное", 60),
+    EXCITED("воодушевленное", 100),
+    ALL_RIGHT("нормальное", 80),
+    BLUE("подавленное", 60),
     DEPRESSED("в депрессии", 40),
     IN_DESPERATION("в отчаянии", 20)
 }
@@ -54,7 +55,7 @@ class Person(
         var moodValue: Int,
         val relationShips: Relationships,
         var profession: Profession? = null) {
-    val mood: Mood get() = Mood.values().sortedBy { it.lowerBound }.last { it.lowerBound < moodValue }
+    val mood: Mood get() = Mood.values().sortedBy { it.lowerBound }.first { it.lowerBound > moodValue }
 }
 
 enum class ResourceType { FOOD, MATERIALS, AMMO, RADIO }
