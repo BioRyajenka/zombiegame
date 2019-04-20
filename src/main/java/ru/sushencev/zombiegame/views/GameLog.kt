@@ -27,8 +27,3 @@ class GameLogView(vararg commands: ControlCommand) : GUIWithCommands(*commands) 
         // TODO: ScreenBuffer.scrollLines
     }
 }
-
-fun returnToGameLogViewCommand(fromGUI: GUI) = ControlCommand('q', "return") {
-    fromGUI.hide()
-    it.activeWindow = it.windows.find { it is GameLogView }!!
-}

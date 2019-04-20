@@ -33,7 +33,7 @@ class ManagePeopleView : GUIWithCommands() {
             TerminalSizeAndPosition(MP_VIEW_VERTICAL_MARGIN, MP_VIEW_HORIZONTAL_MARGIN,
                     it.columns - 2 * MP_VIEW_HORIZONTAL_MARGIN, it.rows - 2 * MP_VIEW_VERTICAL_MARGIN)
         }
-        setCommands(returnToGameLogViewCommand(this))
+        setCommands(closeActiveWindowCommand)
     }
 
     fun setPeople(people: List<Person>) {

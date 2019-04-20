@@ -15,8 +15,6 @@ interface KeyAware {
 }
 
 abstract class GUI : KeyAware {
-    private var visible: Boolean = true
-
     private var sizeAndPositionTranslation: (TerminalSize) -> TerminalSizeAndPosition = {
         TerminalSizeAndPosition(0, 0, it.columns, it.rows)
     }
@@ -28,8 +26,6 @@ abstract class GUI : KeyAware {
     protected abstract fun doDraw(tg: TextGraphics)
 
     fun draw(tg: TextGraphics) {
-        if (!visible) return
-
         val (i, j, width, height) = sizeAndPositionTranslation(tg.size)
 
         tg.newTextGraphics(TerminalPosition(j, i), TerminalSize(width, height)).also {
@@ -37,17 +33,13 @@ abstract class GUI : KeyAware {
             doDraw(it)
         }
     }
-
-    fun hide() {
-        visible = false
-    }
-
-    fun show() {
-        visible = true
-    }
 }
 
 data class ControlCommand(val key: Char, val name: String, val runnable: (Game) -> Unit)
+
+val closeActiveWindowCommand = ControlCommand('q', "return") {
+    it.closeActiveWindow()
+}
 
 abstract class GUIWithCommands constructor() : GUI() {
     private lateinit var commands: List<ControlCommand>

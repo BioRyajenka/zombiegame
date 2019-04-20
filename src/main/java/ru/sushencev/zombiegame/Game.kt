@@ -7,8 +7,9 @@ import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.terminal.Terminal
 import ru.sushencev.zombiegame.views.*
+import java.util.*
 
-class Game(var activeWindow: KeyAware, val windows: List<GUI>, val colony: Colony) : AutoCloseable {
+class Game(baseWindow: GUI, val colony: Colony) : AutoCloseable {
     private val terminal: Terminal = DefaultTerminalFactory().createTerminal().also {
         it.enterPrivateMode()
         it.setCursorVisible(false)
@@ -16,6 +17,16 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>, val colony: Colon
 
     private val screen: TerminalScreen = TerminalScreen(terminal).also {
         it.cursorPosition = null
+    }
+
+    private val windows = LinkedList<GUI>().also { it.add(baseWindow) }
+
+    fun openActiveWindow(window: GUI) {
+        windows.add(window)
+    }
+
+    fun closeActiveWindow() {
+        windows.removeLast()
     }
 
     fun loop() {
@@ -26,10 +37,10 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>, val colony: Colon
             val textGraphics = screen.newTextGraphics()
 
             val input: KeyStroke? = screen.pollInput()
-            if (input != null) activeWindow.onKeyEvent(input, this)
+            if (input != null) windows.last().onKeyEvent(input, this)
             if (needTerminate || input?.keyType == KeyType.EOF) break
 
-            textGraphics.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, terminal.terminalSize,  ' ')
+            textGraphics.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, terminal.terminalSize, ' ')
             windows.forEach { it.draw(textGraphics) }
 
             screen.refresh()
@@ -50,37 +61,25 @@ class Game(var activeWindow: KeyAware, val windows: List<GUI>, val colony: Colon
 }
 
 fun main(args: Array<String>) {
-    // 80x24 is default
+    // default is 80x24
     val map = SimpleMapGenerator.getInstance().generate(80, 70)
-    val mapView = MapView(map).also(GUI::hide)
+    val mapView = MapView(map)
 
     val colony = Colony.createDefaultColony(map)
-    val managePeopleView = ManagePeopleView().also(GUI::hide)
+    val managePeopleView = ManagePeopleView()
 
-    val controlCommands = arrayOf(
+    val gameLogView = GameLogView(
             ControlCommand('m', "mission") {},
             ControlCommand('p', "manage people") {
                 managePeopleView.setPeople(colony.dwellers)
-                managePeopleView.show()
-                it.activeWindow = managePeopleView
+                it.openActiveWindow(managePeopleView)
             },
             ControlCommand('f', "manage facilities") {},
             ControlCommand('M', "map") {
                 mapView.center = colony.site
-                mapView.show()
-                it.activeWindow = mapView
+                it.openActiveWindow(mapView)
             }
     )
-    val gameLogView = GameLogView(*controlCommands)
 
-
-    Game(gameLogView, listOf(gameLogView, mapView, managePeopleView), colony).use(Game::loop)
-//    val pv = PersonView()
-//    Game(pv, listOf(pv), colony).use(Game::loop)
-
-//    val scrollable = Scrollable(items = listOf(
-//            "abc" to Pane("abc"),
-//            "def" to Pane("def")
-//    ))
-//    Game(scrollable, listOf(scrollable), colony).use(Game::loop)
+    Game(gameLogView, colony).use(Game::loop)
 }

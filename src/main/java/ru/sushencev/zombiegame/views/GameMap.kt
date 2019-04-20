@@ -99,7 +99,7 @@ class GameMap(field: List<List<Site>>) : List<List<Site>> by field {
 
 class MapView(private val map: GameMap) : GUIWithCommands() {
     init {
-        setCommands(returnToGameLogViewCommand(this))
+        setCommands(closeActiveWindowCommand)
     }
 
     lateinit var center: Site
