@@ -1,6 +1,7 @@
 package ru.sushencev.zombiegame.views
 
 import com.googlecode.lanterna.Symbols
+import com.googlecode.lanterna.TerminalPosition
 import com.googlecode.lanterna.TextColor
 import com.googlecode.lanterna.graphics.TextGraphics
 import com.googlecode.lanterna.input.KeyStroke
@@ -24,7 +25,9 @@ enum class SiteType(val char: Char, val color: TextColor = WHITE, val decorative
     GAS_STATION('G', GRAY), PARK('p', GRAY), BANK('B', GRAY)
 }
 
-class Site(val type: SiteType, val i: Int, val j: Int)
+enum class DwellingStatus { EMPTY, INHABITED, ABANDONED }
+
+class Site(val type: SiteType, val i: Int, val j: Int, var dwellingStatus: DwellingStatus = DwellingStatus.EMPTY)
 
 abstract class MapGenerator {
     protected abstract fun doGenerate(width: Int, height: Int): GameMap
@@ -100,34 +103,49 @@ class GameMap(field: List<List<Site>>) : List<List<Site>> by field {
 class MapView(private val map: GameMap) : GUI(), CommandsControllable {
     override val commands: List<ControlCommand> = listOf(closeActiveWindowCommand)
 
-    lateinit var center: Site
+    private lateinit var center: TerminalPosition
+
+    fun center(site: Site) {
+        center = TerminalPosition(site.j, site.i)
+    }
 
     override fun onKeyEvent(key: KeyStroke, game: Game) {
-        val (di, dj) = when (key.keyType) {
-            KeyType.ArrowUp -> -1 to 0
-            KeyType.ArrowDown -> 1 to 0
-            KeyType.ArrowLeft -> 0 to -1
-            KeyType.ArrowRight -> 0 to 1
+        val (di, dj) = when {
+            key.character == 'k' || key.keyType == KeyType.ArrowUp -> -1 to 0
+            key.character == 'j' || key.keyType == KeyType.ArrowDown -> 1 to 0
+            key.character == 'h' || key.keyType == KeyType.ArrowLeft -> 0 to -1
+            key.character == 'l' || key.keyType == KeyType.ArrowRight -> 0 to 1
+            key.character == 'y' -> -1 to -1
+            key.character == 'u' -> -1 to 1
+            key.character == 'n' -> 1 to 1
+            key.character == 'b' -> 1 to -1
             else -> 0 to 0
         }
-        val (ni, nj) = center.i + di to center.j + dj
-        val siteType = if (ni in 0 until map.height && nj in 0 until map.width) {
-            map[ni][nj].type
-        } else NOTHING
-        center = Site(siteType, ni, nj)
+        center = center.withRelative(dj, di)
     }
 
     override fun doDraw(tg: TextGraphics) {
         val width = tg.size.columns
         val height = tg.size.rows
+        val borderWidth = 1
         val rows = map.cautiousSubList(
-                center.i - height / 2,
-                center.i + height / 2 + height % 2) { emptyList() }
+                center.i - height / 2 + borderWidth,
+                center.i + height / 2 + height % 2 + borderWidth) { emptyList() }
         rows.forEachIndexed { i, row ->
             val columns = row.cautiousSubList(
-                    center.j - width / 2,
-                    center.j + width / 2 + width % 2) { Site(NOTHING, i, it) }
-            val rowString = columns.joinToString("") { colorize(it.type.char, it.type.color) }
+                    center.j - width / 2 + borderWidth,
+                    center.j + width / 2 + width % 2 + borderWidth) { Site(NOTHING, i, it) }
+            val rowString = columns.joinToString("") {
+                if (it.i == center.i && it.j == center.j) {
+                    colorize('X', BLACK, GREEN)
+                } else {
+                    when (it.dwellingStatus) {
+                        DwellingStatus.EMPTY -> colorize(it.type.char, it.type.color)
+                        DwellingStatus.INHABITED -> colorize(it.type.char, BLACK, WHITE)
+                        DwellingStatus.ABANDONED -> colorize(it.type.char, BLACK, GRAY)
+                    }
+                }
+            }
             tg.putCSIStyledString(0, i, rowString)
         }
     }

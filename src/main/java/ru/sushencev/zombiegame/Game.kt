@@ -92,7 +92,7 @@ fun main(args: Array<String>) {
             },
             ControlCommand('f', "manage facilities") {},
             ControlCommand('M', "map") {
-                mapView.center = colony.site
+                mapView.center(colony.baseSite)
                 it.openActiveWindow(mapView)
             }
     )

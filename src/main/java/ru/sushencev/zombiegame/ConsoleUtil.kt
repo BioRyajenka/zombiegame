@@ -32,6 +32,8 @@ fun colorize(c: Char, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = BLA
     return colorize(c.toString(), color, bgColor)
 }
 
+val TerminalPosition.i get() = row
+val TerminalPosition.j get() = column
 data class TerminalSizeAndPosition(val i: Int, val j: Int, val width: Int, val height: Int)
 
 fun TextGraphics.drawBorder(topLeft: TerminalPosition, size: TerminalSize) {

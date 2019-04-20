@@ -1,5 +1,6 @@
 package ru.sushencev.zombiegame
 
+import ru.sushencev.zombiegame.views.DwellingStatus
 import ru.sushencev.zombiegame.views.GameMap
 import ru.sushencev.zombiegame.views.Site
 import kotlin.math.min
@@ -58,7 +59,17 @@ class Person(
 
 enum class ResourceType { FOOD, MATERIALS, AMMO, RADIO }
 
-class Colony(val resources: MutableMap<ResourceType, Double>, val dwellers: MutableList<Person>, val site: Site) {
+class Colony(val resources: MutableMap<ResourceType, Double>, val dwellers: MutableList<Person>, var baseSite: Site) {
+    init {
+        baseSite.dwellingStatus = DwellingStatus.INHABITED
+    }
+
+    fun resettle(newBaseSite: Site) {
+        baseSite.dwellingStatus = DwellingStatus.ABANDONED
+        baseSite = newBaseSite
+        baseSite.dwellingStatus = DwellingStatus.INHABITED
+    }
+
     companion object {
         fun createDefaultColony(map: GameMap): Colony {
             val resources = mutableMapOf(
@@ -77,14 +88,14 @@ class Colony(val resources: MutableMap<ResourceType, Double>, val dwellers: Muta
                     Person(Gender.MALE, "Джон", "Лобб", Trait.SLEEPY, null, randInt(20, 80), Relationships())
             )
 
-            val site = map.reversed().map { row ->
+            val baseSite = map.reversed().map { row ->
                 row.filterNot { it.type.decorative }.let { if (it.isEmpty()) null else it[randInt(it.size)] }
             }.let { rows: List<Site?> ->
                 rows.drop(min(10, map.size)).find { it != null } ?: rows.find { it != null }
                 ?: error("There is no dwellable sites on this map")
             }
 
-            return Colony(resources, dwellers, site)
+            return Colony(resources, dwellers, baseSite)
         }
     }
 }
