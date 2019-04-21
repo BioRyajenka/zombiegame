@@ -13,11 +13,12 @@ sealed class MyColor(r: Int, g: Int, b: Int) : TextColor by TextColor.Indexed.fr
     object BLUE : MyColor(28, 43, 232)
     object ORANGE : MyColor(237, 125, 38)
     object GRAY : MyColor(125, 125, 125)
+    object LIGHT_GRAY : MyColor(170, 170, 170)
     object WHITE : MyColor(255, 255, 255)
     object BLACK : MyColor(0, 0, 0)
     object BRIGHT_BLUE : MyColor(66, 111, 191)
 
-    object DEFAULT_COLOR : MyColor(170, 170, 170)
+    object DEFAULT_COLOR : TextColor by WHITE
 }
 
 fun colorize(s: String, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = BLACK, bold: Boolean = false): String {
@@ -28,12 +29,13 @@ fun colorize(s: String, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = B
     return "$ESC[$fgColorSequence;$bgColorSequence;${stylesSequence}m$s$ESC[39m"
 }
 
-fun colorize(c: Char, color: TextColor = DEFAULT_COLOR, bgColor: TextColor = BLACK): String {
+fun colorize(c: Char, color: TextColor = WHITE, bgColor: TextColor = BLACK): String {
     return colorize(c.toString(), color, bgColor)
 }
 
 val TerminalPosition.i get() = row
 val TerminalPosition.j get() = column
+
 data class TerminalSizeAndPosition(val i: Int, val j: Int, val width: Int, val height: Int)
 
 fun TextGraphics.drawBorder(topLeft: TerminalPosition, size: TerminalSize) {
@@ -54,4 +56,13 @@ fun TextGraphics.drawBorder(topLeft: TerminalPosition, size: TerminalSize) {
     setCharacter(topLeft.withRelativeRow(size.rows - 1), blChar)
     setCharacter(topLeft.withRelativeColumn(size.columns - 1), trChar)
     setCharacter(topLeft.withRelative(size.columns - 1, size.rows - 1), brChar)
+}
+
+fun TextGraphics.withColor(foregroundColor: TextColor, backgroundColor: TextColor = BLACK, consumer: (TextGraphics) -> Unit) {
+    val (prevForegroundColor, prevBackgroundColor) = this.foregroundColor to this.backgroundColor
+    this.foregroundColor = foregroundColor
+    this.backgroundColor = backgroundColor
+    consumer(this)
+    this.foregroundColor = prevForegroundColor
+    this.backgroundColor = prevBackgroundColor
 }

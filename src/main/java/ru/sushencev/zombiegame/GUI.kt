@@ -59,7 +59,9 @@ class CommandsView constructor(vararg commands: ControlCommand) : GUI(), Command
     }
 
     override fun doDraw(tg: TextGraphics) {
-        tg.drawLine(0, 0, tg.size.columns - 1, 0, Symbols.DOUBLE_LINE_HORIZONTAL)
+        tg.withColor(LIGHT_GRAY) {
+            tg.drawLine(0, 0, tg.size.columns - 1, 0, Symbols.DOUBLE_LINE_HORIZONTAL)
+        }
         val totalCommandsLength = commands.sumBy { it.name.length }
         var curPos = 0
         commands.forEach {

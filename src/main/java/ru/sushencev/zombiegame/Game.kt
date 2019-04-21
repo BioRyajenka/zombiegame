@@ -6,6 +6,7 @@ import com.googlecode.lanterna.input.KeyType
 import com.googlecode.lanterna.screen.TerminalScreen
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory
 import com.googlecode.lanterna.terminal.Terminal
+import ru.sushencev.zombiegame.MyColor.DEFAULT_COLOR
 import ru.sushencev.zombiegame.views.GameLogView
 import ru.sushencev.zombiegame.views.ManagePeopleView
 import ru.sushencev.zombiegame.views.MapView
@@ -43,6 +44,7 @@ class Game(private val commandsView: CommandsView, val colony: Colony) : AutoClo
         while (true) {
             screen.doResizeIfNecessary()
             val tg = screen.newTextGraphics()
+            tg.foregroundColor = DEFAULT_COLOR
 
             val input: KeyStroke? = screen.pollInput()
             if (input != null) {
