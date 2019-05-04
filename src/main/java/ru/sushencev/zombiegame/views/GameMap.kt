@@ -40,9 +40,9 @@ abstract class MapGenerator {
         val upperBorder = listOf(Site(TL_BORDER, -1, -1)) +
                 (0 until map.width).map { Site(HOR_BORDER, -1, it) } +
                 Site(TR_BORDER, -1, map.width)
-        val bottomBorder = listOf(Site(BL_BORDER, -1, -1)) +
-                (0 until map.width).map { Site(HOR_BORDER, -1, it) } +
-                Site(BR_BORDER, -1, map.width)
+        val bottomBorder = listOf(Site(BL_BORDER, map.height, -1)) +
+                (0 until map.width).map { Site(HOR_BORDER, map.height, it) } +
+                Site(BR_BORDER, map.height, map.width)
         val newMap = map.mapIndexed { i, row ->
             listOf(Site(VER_BORDER, i, -1)) + row + Site(VER_BORDER, i, map.width)
         }
@@ -132,9 +132,14 @@ class MapView(private val map: GameMap) : GUI(), CommandsControllable {
                 center.i - height / 2 + borderWidth,
                 center.i + height / 2 + height % 2 + borderWidth) { emptyList() }
         rows.forEachIndexed { i, row ->
+            val rowNum = center.i - height / 2 + i
+
             val columns = row.cautiousSubList(
                     center.j - width / 2 + borderWidth,
-                    center.j + width / 2 + width % 2 + borderWidth) { Site(NOTHING, i, it) }
+                    center.j + width / 2 + width % 2 + borderWidth) {
+                val colNum = it - borderWidth
+                Site(NOTHING, rowNum, colNum)
+            }
             val rowString = columns.joinToString("") {
                 if (it.i == center.i && it.j == center.j) {
                     colorize('X', BLACK, GREEN)
